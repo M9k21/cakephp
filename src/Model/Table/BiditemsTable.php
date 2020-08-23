@@ -83,6 +83,12 @@ class BiditemsTable extends Table
             ->requirePresence('endtime', 'create')
             ->notEmptyDateTime('endtime');
 
+        $validator
+            ->scalar('description')
+            ->maxLength('description', 1000, '1000文字以内で入力してください。')
+            ->requirePresence('description', 'create')
+            ->notEmptyString('description');
+
         return $validator;
     }
 

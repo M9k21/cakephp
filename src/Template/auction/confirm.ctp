@@ -14,6 +14,11 @@
         <?= $this->Form->hidden('name') ?>
         <td><?= h($biditem->name) ?></td>
     </tr>
+    <tr>
+        <th scope="row">商品説明</th>
+        <?= $this->Form->hidden('description') ?>
+        <td><?= h($biditem->description) ?></td>
+    </tr>
     <?= $this->Form->hidden('finished', ['value' => 0]) ?>
     <tr>
         <th scope="row">終了時間</th>
