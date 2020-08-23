@@ -92,8 +92,35 @@ class AuctionController extends AuctionBaseController
         if ($this->request->is('post')) {
             // $biditemにフォームの送信内容を反映
             $biditem =  $this->Biditems->patchEntity($biditem, $this->request->getData());
+            if ($biditem->errors()) {
+                // バリデーション処理
+                $this->Flash->error(__('入力内容を確認してください。'));
+            } else {
+                // セッションに値を保管
+                $this->getRequest()->getSession()->write('add_biditem', $biditem);
+                return $this->redirect(['action' => 'confirm']);
+            }
+        }
+        // 値を保管
+        $this->set(compact('biditem'));
+    }
+
+    // 出品情報の確認
+    public function confirm()
+    {
+        $session = $this->getRequest()->getSession();
+        if ($session->check('add_biditem')) {
+            // セッションに値が入っているか確認する
+            $biditem = $session->read('add_biditem');
+        } else {
+            return $this->redirect(['action' => 'add']);
+        }
+        // POST送信時の処理
+        if ($this->request->is('post')) {
             // $biditemを保存する
             if ($this->Biditems->save($biditem)) {
+                // セッションの削除
+                $session->delete('add_biditem');
                 // 成功時のメッセージ
                 $this->Flash->success(__('保存しました。'));
                 // トップページ(index)に移動

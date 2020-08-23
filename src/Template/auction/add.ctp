@@ -1,5 +1,11 @@
 <h2>商品を出品する</h2>
-<?= $this->Form->create($biditem) ?>
+<?= $this->Form->create($biditem, [
+    'type' => 'post',
+    'url' => [
+        'controller' => 'Auction',
+        'action' => 'add'
+    ]
+]) ?>
 <fieldset>
     <legend>※商品名と終了日時を入力：</legend>
     <?php
@@ -10,5 +16,5 @@
     echo $this->Form->control('endtime');
     ?>
 </fieldset>
-<?= $this->Form->button(__('Submit')) ?>
+<?= $this->Form->button(__('Confirm')) ?>
 <?= $this->Form->end() ?>
