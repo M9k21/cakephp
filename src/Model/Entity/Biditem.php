@@ -36,6 +36,7 @@ class Biditem extends Entity
         'endtime' => true,
         'created' => true,
         'description' => true,
+        'image' => true,
         'user' => true,
         'bidinfo' => true,
         'bidrequests' => true,

@@ -20,6 +20,12 @@
         <th scope="row">終了時間</th>
         <td><?= h($biditem->endtime) ?></td>
     </tr>
+    <tr>
+        <th scope="row">出品画像</th>
+        <td>
+            <?= $this->Html->image('uploaded/' . $biditem->image, ['width' => 300, 'height' => 200]) ?>
+        </td>
+    </tr>
 </table>
 <?= $this->Form->button(__('Submit')) ?>
 <?= $this->Form->end() ?>

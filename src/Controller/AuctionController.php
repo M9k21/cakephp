@@ -90,12 +90,20 @@ class AuctionController extends AuctionBaseController
         $biditem = $this->Biditems->newEntity();
         // POST送信時の処理
         if ($this->request->is('post')) {
-            // $biditemにフォームの送信内容を反映
-            $biditem =  $this->Biditems->patchEntity($biditem, $this->request->getData());
+            // フォームの送信内容を反映
+            $request_data = $this->request->getData();
+            // ファイル名を格納
+            $request_data['image'] = date('YmdHis') . $this->request->getData('image.name');
+            $biditem = $this->Biditems->patchEntity($biditem, $request_data);
             if ($biditem->errors()) {
                 // バリデーション処理
                 $this->Flash->error(__('入力内容を確認してください。'));
             } else {
+                $tmpFile = $this->request->getData('image.tmp_name');
+                // 画像ファイルの保存先
+                $filePath = WWW_ROOT . DS . 'img' . DS . 'uploaded' . DS . $request_data['image'];
+                // 画像ファイルをディレクトリに保存
+                move_uploaded_file($tmpFile, $filePath);
                 // セッションに値を保管
                 $this->getRequest()->getSession()->write('add_biditem', $biditem);
                 return $this->redirect(['action' => 'confirm']);

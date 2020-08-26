@@ -1,6 +1,6 @@
 <h2>商品を出品する</h2>
 <?= $this->Form->create($biditem, [
-    'type' => 'post',
+    'type' => 'file',
     'url' => [
         'controller' => 'Auction',
         'action' => 'add'
@@ -15,6 +15,7 @@
     echo $this->Form->input('description', ['rows' => 5, 'label' => 'Description']);
     echo $this->Form->hidden('finished', ['value' => 0]);
     echo $this->Form->control('endtime');
+    echo $this->Form->control('image', ['type' => 'file']);
     ?>
 </fieldset>
 <?= $this->Form->button(__('Confirm')) ?>
