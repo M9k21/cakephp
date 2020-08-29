@@ -93,21 +93,33 @@ class AuctionController extends AuctionBaseController
             // フォームの送信内容を反映
             $request_data = $this->request->getData();
             // ファイル名を格納
-            $request_data['image'] = date('YmdHis') . $this->request->getData('image.name');
+            $request_file = $this->request->getData('image');
+            $request_data['image'] = date('YmdHis') . $request_file['name'];
+            // $biditemの値を保管
             $biditem = $this->Biditems->patchEntity($biditem, $request_data);
             if ($biditem->errors()) {
-                // バリデーション処理
                 $this->Flash->error(__('入力内容を確認してください。'));
-            } else {
-                $tmpFile = $this->request->getData('image.tmp_name');
-                // 画像ファイルの保存先
-                $filePath = WWW_ROOT . DS . 'img' . DS . 'uploaded' . DS . $request_data['image'];
-                // 画像ファイルをディレクトリに保存
-                move_uploaded_file($tmpFile, $filePath);
-                // セッションに値を保管
-                $this->getRequest()->getSession()->write('add_biditem', $biditem);
-                return $this->redirect(['action' => 'confirm']);
+                return $this->redirect(['action' => 'add']);
             }
+            //画像のバリデーション
+            // ファイル形式のチェック
+            $allowFileType = array('image/jpeg', 'image/png', 'image/gif');
+            if (!in_array($request_file['type'], $allowFileType)) {
+                $this->Flash->error(__('PNG、JPGまたはGIFの画像ファイルのみアップロードできます。'));
+                return $this->redirect(['action' => 'add']);
+            }
+            // ファイル容量のチェック
+            if ($request_file['size'] > 5242880) {
+                $this->Flash->error(__('5MB以下の画像ファイルを指定してください。'));
+                return $this->redirect(['action' => 'add']);
+            }
+            // 画像ファイルの保存
+            $filePath = WWW_ROOT . DS . 'img' . DS . 'uploaded' . DS . $request_data['image'];
+            // 画像ファイルをディレクトリに保存
+            move_uploaded_file($request_file['tmp_name'], $filePath);
+            // セッションに値を保管
+            $this->getRequest()->getSession()->write('add_biditem', $biditem);
+            return $this->redirect(['action' => 'confirm']);
         }
         // 値を保管
         $this->set(compact('biditem'));
