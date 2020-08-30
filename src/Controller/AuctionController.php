@@ -86,8 +86,19 @@ class AuctionController extends AuctionBaseController
     // 出品する処理
     public function add()
     {
-        // Biditemインスタンスを用意
-        $biditem = $this->Biditems->newEntity();
+        $session = $this->getRequest()->getSession();
+        // 修正の場合の処理
+        if (!empty($this->request->getQuery('additem'))) {
+            if ($session->check('add_biditem')) {
+                $biditem = $session->consume('add_biditem');
+                $this->Flash->error(__('恐れ入りますが、画像を改めて指定してください。'));
+            } else {
+                return $this->redirect(['action' => 'add']);
+            }
+        } else {
+            // Biditemインスタンスを用意
+            $biditem = $this->Biditems->newEntity();
+        }
         // POST送信時の処理
         if ($this->request->is('post')) {
             // フォームの送信内容を反映
@@ -118,7 +129,7 @@ class AuctionController extends AuctionBaseController
             // 画像ファイルをディレクトリに保存
             move_uploaded_file($request_file['tmp_name'], $filePath);
             // セッションに値を保管
-            $this->getRequest()->getSession()->write('add_biditem', $biditem);
+            $session->write('add_biditem', $biditem);
             return $this->redirect(['action' => 'confirm']);
         }
         // 値を保管

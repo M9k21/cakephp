@@ -29,3 +29,4 @@
 </table>
 <?= $this->Form->button(__('Submit')) ?>
 <?= $this->Form->end() ?>
+<h6><?= $this->Html->link(__('<< 修正する'), ['action' => 'add', '?' => ['additem' => 'rewrite']]) ?></h6>
