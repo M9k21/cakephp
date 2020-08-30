@@ -95,6 +95,9 @@ class AuctionController extends AuctionBaseController
             } else {
                 return $this->redirect(['action' => 'add']);
             }
+        } elseif ($session->check('before_validate')) {
+            // 入力エラーによる再表示の場合
+            $biditem = $session->consume('before_validate');
         } else {
             // Biditemインスタンスを用意
             $biditem = $this->Biditems->newEntity();
@@ -106,6 +109,7 @@ class AuctionController extends AuctionBaseController
             // ファイル名を格納
             $request_file = $this->request->getData('image');
             $request_data['image'] = date('YmdHis') . $request_file['name'];
+            $session->write('before_validate', $biditem);
             // $biditemの値を保管
             $biditem = $this->Biditems->patchEntity($biditem, $request_data);
             if ($biditem->errors()) {
@@ -128,6 +132,7 @@ class AuctionController extends AuctionBaseController
             $filePath = WWW_ROOT . DS . 'img' . DS . 'uploaded' . DS . $request_data['image'];
             // 画像ファイルをディレクトリに保存
             move_uploaded_file($request_file['tmp_name'], $filePath);
+            $session->delete('before_validate');
             // セッションに値を保管
             $session->write('add_biditem', $biditem);
             return $this->redirect(['action' => 'confirm']);
