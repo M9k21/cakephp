@@ -62,9 +62,9 @@ class AuctionController extends AuctionBaseController
                 'contain' => ['Users'],
                 'order' => ['price' => 'desc']
             ])->first();
-            // Bidirequestが得られたときの処理
+            // Bidrequestが得られた時の処理
             if (!empty($bidrequest)) {
-                //Bifinfoの各種プロパティをを設定して保存
+                // Bidinfoの各種プロパティを設定して保存する
                 $bidinfo->user_id = $bidrequest->user->id;
                 $bidinfo->user = $bidrequest->user;
                 $bidinfo->price = $bidrequest->price;
