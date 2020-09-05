@@ -43,7 +43,7 @@
 </table>
 <div class="related">
     <h4><?= __('落札情報') ?></h4>
-    <?php if (!empty($biditem->bidinfo)) : ?>
+    <?php if ($biditem->finished && !empty($bidrequests)) : ?>
         <table cellpadding="0" cellspacing="0">
             <tr>
                 <th scope="col">落札者</th>
@@ -52,7 +52,7 @@
             </tr>
             <tr>
                 <td><?= h($biditem->bidinfo->user->username) ?></td>
-                <td><?= h($biditem->bidinfo->price) ?></td>
+                <td><?= h($biditem->bidinfo->price) ?>円</td>
                 <td><?= h($biditem->endtime) ?></td>
             </tr>
         </table>
@@ -77,7 +77,7 @@
                     <?php foreach ($bidrequests as $bidrequest) : ?>
                         <tr>
                             <td><?= h($bidrequest->user->username) ?></td>
-                            <td><?= h($bidrequest->price) ?></td>
+                            <td><?= h($bidrequest->price) ?>円</td>
                             <td><?= $bidrequest->created ?></td>
                         </tr>
                     <?php endforeach; ?>
