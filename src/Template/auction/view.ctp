@@ -22,7 +22,15 @@
     </tr>
     <tr>
         <th scope="row">終了時間</th>
-        <td><?= h($biditem->endtime) ?></td>
+        <td>
+            <?= h($biditem->endtime) ?>
+            <div id="countdown" style="color:red">
+                <script>
+                    var json_data = JSON.parse('<?= $json ?>');
+                </script>
+                <?= $this->Html->script('timer', ['block' => true]) ?>
+            </div>
+        </td>
     </tr>
     <tr>
         <th scope="row">投稿時間</th>

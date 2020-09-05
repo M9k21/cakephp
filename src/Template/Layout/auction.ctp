@@ -47,6 +47,7 @@
     </div>
     <footer>
     </footer>
+    <?= $this->fetch('script') ?>
 </body>
 
 </html>

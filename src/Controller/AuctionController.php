@@ -79,8 +79,13 @@ class AuctionController extends AuctionBaseController
             'contain' => ['Users'],
             'order' => ['price' => 'desc']
         ])->toArray();
+        // JavaScriptに渡す値をjsonに変換
+        $json = json_encode(
+            ['endtime' => $biditem->endtime],
+            JSON_HEX_QUOT | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS
+        );
         // オブジェクト類をテンプレート用に設定
-        $this->set(compact('biditem', 'bidrequests'));
+        $this->set(compact('biditem', 'bidrequests', 'json'));
     }
 
     // 出品する処理
