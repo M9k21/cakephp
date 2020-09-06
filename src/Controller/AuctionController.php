@@ -81,7 +81,10 @@ class AuctionController extends AuctionBaseController
         ])->toArray();
         // JavaScriptに渡す値をjsonに変換
         $json = json_encode(
-            ['endtime' => $biditem->endtime],
+            [
+                'endtime' => $biditem->endtime,
+                'nowtime' => time()
+            ],
             JSON_HEX_QUOT | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS
         );
         // オブジェクト類をテンプレート用に設定
