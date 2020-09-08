@@ -112,7 +112,7 @@
                         <tr>
                             <td><?= h($bidrequest->user->username) ?></td>
                             <td><?= h($bidrequest->price) ?>円</td>
-                            <td><?= $bidrequest->created ?></td>
+                            <td><?= h($bidrequest->created) ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
