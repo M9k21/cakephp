@@ -180,6 +180,12 @@ class AuctionController extends AuctionBaseController
     // 入札の処理
     public function bid($biditem_id = null)
     {
+        // $biditem_idの$biditemを取得する
+        $biditem = $this->Biditems->get($biditem_id);
+        if ($biditem->endtime < new \DateTime('now')) {
+            $this->Flash->error(__('入札は終了しました。'));
+            return $this->redirect(['action' => 'view', $biditem_id]);
+        }
         // 入札用のBidrequestインスタンスを用意
         $bidrequest =  $this->Bidrequests->newEntity();
         // $bidrequestにbiditem_idとuser_idを設定
@@ -199,8 +205,6 @@ class AuctionController extends AuctionBaseController
             // 失敗時のメッセージ
             $this->Flash->error(__('入札に失敗しました。もう一度入力下さい。'));
         }
-        // $biditem_idの$biditemを取得する
-        $biditem = $this->Biditems->get($biditem_id);
         $this->set(compact('bidrequest', 'biditem'));
     }
 
