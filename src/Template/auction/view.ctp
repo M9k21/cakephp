@@ -26,26 +26,26 @@
             <?= h($biditem->endtime) ?>
             <div id="countdown" style="color:red">
                 <script>
-                    var json_data = JSON.parse('<?= $json ?>');
+                    const json_data = JSON.parse('<?= $json ?>');
 
                     function dateCounter() {
                         //現在の日時取得
-                        var nowDate = new Date(json_data.nowtime * 1000);
+                        const nowDate = new Date(json_data.nowtime * 1000);
                         //終了の日時取得
-                        var anyDate = new Date(json_data.endtime);
+                        const anyDate = new Date(json_data.endtime);
                         //日数を計算
-                        var daysBetween = Math.floor((anyDate - nowDate) / (1000 * 60 * 60 * 24));
-                        var ms = (anyDate - nowDate);
+                        const daysBetween = Math.floor((anyDate - nowDate) / (1000 * 60 * 60 * 24));
+                        let ms = (anyDate - nowDate);
 
-                        var timer = setInterval(function() {
+                        const timer = setInterval(function() {
                             if (ms >= 0) {
                                 //時間を取得
-                                var h = Math.floor(ms / 3600000);
-                                var _h = h % 24;
+                                const h = Math.floor(ms / 3600000);
+                                const _h = h % 24;
                                 //分を取得
-                                var m = Math.floor((ms - h * 3600000) / 60000);
+                                const m = Math.floor((ms - h * 3600000) / 60000);
                                 //秒を取得
-                                var s = Math.floor((ms - h * 3600000 - m * 60000) / 1000);
+                                const s = Math.floor((ms - h * 3600000 - m * 60000) / 1000);
 
                                 //HTML上に出力
                                 document.getElementById("countdown").innerHTML = "終了まで " + daysBetween + "日" + _h + "時間" + m + "分" + s + "秒";
