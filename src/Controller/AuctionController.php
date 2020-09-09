@@ -124,29 +124,34 @@ class AuctionController extends AuctionBaseController
                 $this->Flash->error(__('入力内容を確認してください。'));
                 return $this->redirect(['action' => 'add']);
             }
-            //画像のバリデーション
-            // ファイル形式のチェック
-            $allowFileType = array('image/jpeg', 'image/png', 'image/gif');
-            if (!in_array($request_file['type'], $allowFileType)) {
-                $this->Flash->error(__('PNG、JPGまたはGIFの画像ファイルのみアップロードできます。'));
-                return $this->redirect(['action' => 'add']);
-            }
-            // ファイル容量のチェック
-            if ($request_file['size'] > 5242880) {
-                $this->Flash->error(__('5MB以下の画像ファイルを指定してください。'));
-                return $this->redirect(['action' => 'add']);
-            }
-            // 画像ファイルの保存
-            $filePath = WWW_ROOT . DS . 'img' . DS . 'uploaded' . DS . $request_data['image'];
-            // 画像ファイルをディレクトリに保存
-            move_uploaded_file($request_file['tmp_name'], $filePath);
-            $session->delete('before_validate');
+            // 画像のバリデーション処理
+            $this->fileValidation($request_data, $request_file);
             // セッションに値を保管
             $session->write('add_biditem', $biditem);
             return $this->redirect(['action' => 'confirm']);
         }
         // 値を保管
         $this->set(compact('biditem'));
+    }
+
+    private function fileValidation($request_data, $request_file)
+    {
+        // ファイル形式のチェック
+        $allowFileType = array('image/jpeg', 'image/png', 'image/gif');
+        if (!in_array($request_file['type'], $allowFileType)) {
+            $this->Flash->error(__('PNG、JPGまたはGIFの画像ファイルのみアップロードできます。'));
+            return $this->redirect(['action' => 'add']);
+        }
+        // ファイル容量のチェック
+        if ($request_file['size'] > 5242880) {
+            $this->Flash->error(__('5MB以下の画像ファイルを指定してください。'));
+            return $this->redirect(['action' => 'add']);
+        }
+        // 画像ファイルの保存
+        $filePath = WWW_ROOT . DS . 'img' . DS . 'uploaded' . DS . $request_data['image'];
+        // 画像ファイルをディレクトリに保存
+        move_uploaded_file($request_file['tmp_name'], $filePath);
+        $this->getRequest()->getSession()->delete('before_validate');
     }
 
     // 出品情報の確認
