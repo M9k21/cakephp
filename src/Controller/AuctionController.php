@@ -120,7 +120,7 @@ class AuctionController extends AuctionBaseController
             $session->write('before_validate', $biditem);
             // $biditemの値を保管
             $biditem = $this->Biditems->patchEntity($biditem, $request_data);
-            if ($biditem->errors()) {
+            if ($biditem->getErrors()) {
                 $this->Flash->error(__('入力内容を確認してください。'));
                 return $this->redirect(['action' => 'add']);
             }
