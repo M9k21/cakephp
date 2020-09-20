@@ -3,7 +3,7 @@
 namespace App\Controller;
 
 use App\Controller\AppController;
-
+use Cake\Datasource\ConnectionManager;
 use Cake\Event\Event;
 use Exception;
 
@@ -159,6 +159,7 @@ class AuctionController extends AuctionBaseController
     public function confirm()
     {
         $session = $this->getRequest()->getSession();
+        $connection = ConnectionManager::get('default');
         if ($session->check('add_biditem')) {
             // セッションに値が入っているか確認する
             $biditem = $session->read('add_biditem');
@@ -167,23 +168,30 @@ class AuctionController extends AuctionBaseController
         }
         // POST送信時の処理
         if ($this->request->is('post')) {
-            // $biditemの値を保管
-            $biditem = $this->Biditems->patchEntity($biditem, $this->request->getData());
-            if ($biditem->getErrors()) {
-                $this->Flash->error(__('入力内容を確認してください。'));
-                return $this->redirect(['action' => 'add']);
+            $connection->begin();
+            try {
+                // $biditemの値を保管
+                $biditem = $this->Biditems->patchEntity($biditem, $this->request->getData());
+                if ($biditem->getErrors()) {
+                    $this->Flash->error(__('入力内容を確認してください。'));
+                    return $this->redirect(['action' => 'add', '?' => ['additem' => 'rewrite']]);
+                }
+                // $biditemを保存する
+                if ($this->Biditems->save($biditem)) {
+                    // セッションの削除
+                    $session->delete('add_biditem');
+                    // 成功時のメッセージ
+                    $this->Flash->success(__('保存しました。'));
+                    $connection->commit();
+                    // トップページ(index)に移動
+                    return $this->redirect(['action' => 'index']);
+                }
+            } catch (Exception $e) {
+                // 失敗時のメッセージ
+                $this->Flash->error(__('保存に失敗しました。もう一度入力下さい。'));
+                $connection->rollback();
+                return $this->redirect(['action' => 'add', '?' => ['additem' => 'rewrite']]);
             }
-            // $biditemを保存する
-            if ($this->Biditems->save($biditem)) {
-                // セッションの削除
-                $session->delete('add_biditem');
-                // 成功時のメッセージ
-                $this->Flash->success(__('保存しました。'));
-                // トップページ(index)に移動
-                return $this->redirect(['action' => 'index']);
-            }
-            // 失敗時のメッセージ
-            $this->Flash->error(__('保存に失敗しました。もう一度入力下さい。'));
         }
         // 値を保管
         $this->set(compact('biditem'));
