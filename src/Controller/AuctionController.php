@@ -118,14 +118,15 @@ class AuctionController extends AuctionBaseController
             $request_file = $this->request->getData('image');
             $request_data['image'] = date('YmdHis') . $request_file['name'];
             $session->write('before_validate', $biditem);
-            // $biditemの値を保管
-            $biditem = $this->Biditems->patchEntity($biditem, $request_data);
-            if ($biditem->getErrors()) {
-                $this->Flash->error(__('入力内容を確認してください。'));
-                return $this->redirect(['action' => 'add']);
-            }
             // 画像のバリデーション処理
             $this->fileValidation($request_data, $request_file);
+            // $biditemに値を保管
+            $biditem->user_id = $request_data['user_id'];
+            $biditem->name =  $request_data['name'];
+            $biditem->description = $request_data['description'];
+            $biditem->finished = $request_data['finished'];
+            $biditem->endtime = $request_data['endtime'];
+            $biditem->image = $request_data['image'];
             // セッションに値を保管
             $session->write('add_biditem', $biditem);
             return $this->redirect(['action' => 'confirm']);
@@ -166,6 +167,12 @@ class AuctionController extends AuctionBaseController
         }
         // POST送信時の処理
         if ($this->request->is('post')) {
+            // $biditemの値を保管
+            $biditem = $this->Biditems->patchEntity($biditem, $this->request->getData());
+            if ($biditem->getErrors()) {
+                $this->Flash->error(__('入力内容を確認してください。'));
+                return $this->redirect(['action' => 'add']);
+            }
             // $biditemを保存する
             if ($this->Biditems->save($biditem)) {
                 // セッションの削除
