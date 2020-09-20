@@ -12,7 +12,7 @@
     echo $this->Form->hidden('user_id', ['value' => $authuser['id']]);
     echo '<p><strong>USER: ' . h($authuser['username']) . '</strong></p>';
     echo $this->Form->control('name');
-    echo $this->Form->input('description', ['rows' => 5, 'label' => 'Description']);
+    echo $this->Form->control('description', ['rows' => 5, 'label' => 'Description']);
     echo $this->Form->hidden('finished', ['value' => 0]);
     echo $this->Form->control('endtime');
     echo $this->Form->control('image', ['type' => 'file']);
