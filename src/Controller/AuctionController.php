@@ -95,6 +95,8 @@ class AuctionController extends AuctionBaseController
     public function add()
     {
         $session = $this->getRequest()->getSession();
+        // Biditemインスタンスを用意
+        $biditem = $this->Biditems->newEntity();
         // 修正の場合の処理
         if (!empty($this->request->getQuery('additem'))) {
             if ($session->check('add_biditem')) {
@@ -103,12 +105,6 @@ class AuctionController extends AuctionBaseController
             } else {
                 return $this->redirect(['action' => 'add']);
             }
-        } elseif ($session->check('before_validate')) {
-            // 入力エラーによる再表示の場合
-            $biditem = $session->consume('before_validate');
-        } else {
-            // Biditemインスタンスを用意
-            $biditem = $this->Biditems->newEntity();
         }
         // POST送信時の処理
         if ($this->request->is('post')) {
@@ -117,9 +113,6 @@ class AuctionController extends AuctionBaseController
             // ファイル名を格納
             $request_file = $this->request->getData('image');
             $request_data['image'] = date('YmdHis') . $request_file['name'];
-            $session->write('before_validate', $biditem);
-            // 画像のバリデーション処理
-            $this->fileValidation($request_data, $request_file);
             // $biditemに値を保管
             $biditem->user_id = $request_data['user_id'];
             $biditem->name =  $request_data['name'];
@@ -129,6 +122,8 @@ class AuctionController extends AuctionBaseController
             $biditem->image = $request_data['image'];
             // セッションに値を保管
             $session->write('add_biditem', $biditem);
+            // 画像のバリデーション処理
+            $this->fileValidation($request_data, $request_file);
             return $this->redirect(['action' => 'confirm']);
         }
         // 値を保管
@@ -141,18 +136,17 @@ class AuctionController extends AuctionBaseController
         $allowFileType = array('image/jpeg', 'image/png', 'image/gif');
         if (!in_array($request_file['type'], $allowFileType)) {
             $this->Flash->error(__('PNG、JPGまたはGIFの画像ファイルのみアップロードできます。'));
-            return $this->redirect(['action' => 'add']);
+            return $this->redirect(['action' => 'add', '?' => ['additem' => 'rewrite']]);
         }
         // ファイル容量のチェック
         if ($request_file['size'] > 5242880) {
             $this->Flash->error(__('5MB以下の画像ファイルを指定してください。'));
-            return $this->redirect(['action' => 'add']);
+            return $this->redirect(['action' => 'add', '?' => ['additem' => 'rewrite']]);
         }
         // 画像ファイルの保存
         $filePath = WWW_ROOT . DS . 'img' . DS . 'uploaded' . DS . $request_data['image'];
         // 画像ファイルをディレクトリに保存
         move_uploaded_file($request_file['tmp_name'], $filePath);
-        $this->getRequest()->getSession()->delete('before_validate');
     }
 
     // 出品情報の確認
