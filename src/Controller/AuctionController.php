@@ -43,35 +43,44 @@ class AuctionController extends AuctionBaseController
     // 商品情報の表示
     public function view($id = null)
     {
+        $connection = ConnectionManager::get('default');
         // $idのBiditemを取得
         $biditem = $this->Biditems->get($id, [
             'contain' => ['Users', 'Bidinfo', 'Bidinfo.Users']
         ]);
         // オークション終了時の処理
         if ($biditem->endtime < new \DateTime('now') and $biditem->finished == 0) {
-            // finishedを1に変更して保存
-            $biditem->finished = 1;
-            $this->Biditems->save($biditem);
-            // Bidinfoを作成する
-            $bidinfo = $this->Bidinfo->newEntity();
-            // Bidinfoのbiditem_idに$idを設定
-            $bidinfo->biditem_id = $id;
-            // 最高金額のBidrequestを検索
-            $bidrequest = $this->Bidrequests->find('all', [
-                'conditions' => ['biditem_id' => $id],
-                'contain' => ['Users'],
-                'order' => ['price' => 'desc']
-            ])->first();
-            // Bidrequestが得られた時の処理
-            if (!empty($bidrequest)) {
-                // Bidinfoの各種プロパティを設定して保存する
-                $bidinfo->user_id = $bidrequest->user->id;
-                $bidinfo->user = $bidrequest->user;
-                $bidinfo->price = $bidrequest->price;
-                $this->Bidinfo->save($bidinfo);
+            $connection->begin();
+            try {
+                // finishedを1に変更して保存
+                $biditem->finished = 1;
+                $this->Biditems->save($biditem);
+                // Bidinfoを作成する
+                $bidinfo = $this->Bidinfo->newEntity();
+                // Bidinfoのbiditem_idに$idを設定
+                $bidinfo->biditem_id = $id;
+                // 最高金額のBidrequestを検索
+                $bidrequest = $this->Bidrequests->find('all', [
+                    'conditions' => ['biditem_id' => $id],
+                    'contain' => ['Users'],
+                    'order' => ['price' => 'desc']
+                ])->first();
+                // Bidrequestが得られた時の処理
+                if (!empty($bidrequest)) {
+                    // Bidinfoの各種プロパティを設定して保存する
+                    $bidinfo->user_id = $bidrequest->user->id;
+                    $bidinfo->user = $bidrequest->user;
+                    $bidinfo->price = $bidrequest->price;
+                    $this->Bidinfo->save($bidinfo);
+                }
+                // Biditemのbidinfoに$bidinfoを設定
+                $biditem->bidinfo = $bidinfo;
+                $connection->commit();
+            } catch (Exception $e) {
+                $this->Flash->error(__('エラーが発生しました。再度実行してください。'));
+                $connection->rollback();
+                return $this->redirect(['action' => 'index']);
             }
-            // Biditemのbidinfoに$bidinfoを設定
-            $biditem->bidinfo = $bidinfo;
         }
         // Bidrequestsからbiditem_idが$idのものを取得
         $bidrequests = $this->Bidrequests->find('all', [
@@ -194,6 +203,7 @@ class AuctionController extends AuctionBaseController
     // 入札の処理
     public function bid($biditem_id = null)
     {
+        $connection = ConnectionManager::get('default');
         // $biditem_idの$biditemを取得する
         $biditem = $this->Biditems->get($biditem_id);
         if ($biditem->endtime < new \DateTime('now')) {
@@ -207,17 +217,23 @@ class AuctionController extends AuctionBaseController
         $bidrequest->user_id =  $this->Auth->user('id');
         // POST送信時の処理
         if ($this->request->is('post')) {
-            // $bidrequestに送信フォームの内容を反映する
-            $bidrequest = $this->Bidrequests->patchEntity($bidrequest, $this->request->getData());
-            // Bidrequestを保存
-            if ($this->Bidrequests->save($bidrequest)) {
-                // 成功時のメッセージ
-                $this->Flash->success(__('入札を送信しました。'));
-                // トップページにリダイレクト
-                return $this->redirect(['action' => 'view', $biditem_id]);
+            $connection->begin();
+            try {
+                // $bidrequestに送信フォームの内容を反映する
+                $bidrequest = $this->Bidrequests->patchEntity($bidrequest, $this->request->getData());
+                // Bidrequestを保存
+                if ($this->Bidrequests->save($bidrequest)) {
+                    // 成功時のメッセージ
+                    $this->Flash->success(__('入札を送信しました。'));
+                    $connection->commit();
+                    // トップページにリダイレクト
+                    return $this->redirect(['action' => 'view', $biditem_id]);
+                }
+            } catch (Exception $e) {
+                // 失敗時のメッセージ
+                $this->Flash->error(__('入札に失敗しました。もう一度入力下さい。'));
+                $connection->rollback();
             }
-            // 失敗時のメッセージ
-            $this->Flash->error(__('入札に失敗しました。もう一度入力下さい。'));
         }
         $this->set(compact('bidrequest', 'biditem'));
     }
@@ -225,17 +241,23 @@ class AuctionController extends AuctionBaseController
     // 落札者とのメッセージ
     public function msg($bidinfo_id = null)
     {
+        $connection = ConnectionManager::get('default');
         // Bidmessageを新たに用意
         $bidmsg = $this->Bidmessages->newEntity();
         // POST送信時の処理
         if ($this->request->is('post')) {
-            // 送信されたフォームで$bidmsgを更新
-            $bidmsg = $this->Bidmessages->patchEntity($bidmsg, $this->request->getData());
-            // Bidmessageを保存
-            if ($this->Bidmessages->save($bidmsg)) {
-                $this->Flash->success(__('保存しました。'));
-            } else {
+            $connection->begin();
+            try {
+                // 送信されたフォームで$bidmsgを更新
+                $bidmsg = $this->Bidmessages->patchEntity($bidmsg, $this->request->getData());
+                // Bidmessageを保存
+                if ($this->Bidmessages->save($bidmsg)) {
+                    $this->Flash->success(__('保存しました。'));
+                    $connection->commit();
+                }
+            } catch (Exception $e) {
                 $this->Flash->error(__('保存に失敗しました。もう一度入力下さい。'));
+                $connection->rollback();
             }
         }
         try {
