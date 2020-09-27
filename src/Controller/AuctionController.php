@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Controller\AppController;
 use Cake\Datasource\ConnectionManager;
+use Cake\I18n\Time;
 use Cake\Event\Event;
 use Exception;
 
@@ -109,7 +110,7 @@ class AuctionController extends AuctionBaseController
         // 修正の場合の処理
         if (!empty($this->request->getQuery('additem'))) {
             if ($session->check('add_biditem')) {
-                $biditem = $session->consume('add_biditem');
+                $biditem = $this->Biditems->newEntity($session->consume('add_biditem'));
                 $this->Flash->error(__('恐れ入りますが、画像を改めて指定してください。'));
             } else {
                 return $this->redirect(['action' => 'add']);
@@ -130,7 +131,7 @@ class AuctionController extends AuctionBaseController
             $biditem->endtime = $request_data['endtime'];
             $biditem->image = $request_data['image'];
             // セッションに値を保管
-            $session->write('add_biditem', $biditem);
+            $session->write('add_biditem', $biditem->toArray());
             // 画像のバリデーション処理
             $this->fileValidation($request_data, $request_file);
             return $this->redirect(['action' => 'confirm']);
@@ -165,7 +166,9 @@ class AuctionController extends AuctionBaseController
         $connection = ConnectionManager::get('default');
         if ($session->check('add_biditem')) {
             // セッションに値が入っているか確認する
-            $biditem = $session->read('add_biditem');
+            $biditem = $this->Biditems->newEntity($session->read('add_biditem'));
+            $biditem->endtime = new Time($biditem->endtime);
+            $biditem->finished = 0;
         } else {
             return $this->redirect(['action' => 'add']);
         }

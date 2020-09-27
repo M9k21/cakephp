@@ -27,12 +27,12 @@
     <tr>
         <th scope="row">終了時間</th>
         <td>
-            <?= h($biditem->endtime['year']) . '/' . h($biditem->endtime['month']) . '/' . h($biditem->endtime['day']) . ' ' . h($biditem->endtime['hour']) . ':' . h($biditem->endtime['minute']); ?>
-            <?= $this->Form->hidden('endtime.year', $biditem->endtime) ?>
-            <?= $this->Form->hidden('endtime.month', $biditem->endtime) ?>
-            <?= $this->Form->hidden('endtime.day', $biditem->endtime) ?>
-            <?= $this->Form->hidden('endtime.hour', $biditem->endtime) ?>
-            <?= $this->Form->hidden('endtime.minute', $biditem->endtime) ?>
+            <?= h($biditem->endtime) ?>
+            <?= $this->Form->hidden('endtime.year', ['value' => $biditem->endtime->year]) ?>
+            <?= $this->Form->hidden('endtime.month', ['value' =>  $biditem->endtime->month]) ?>
+            <?= $this->Form->hidden('endtime.day', ['value' =>  $biditem->endtime->day]) ?>
+            <?= $this->Form->hidden('endtime.hour', ['value' =>   $biditem->endtime->hour]) ?>
+            <?= $this->Form->hidden('endtime.minute', ['value' => $biditem->endtime->minute]) ?>
         </td>
     </tr>
     <tr>
