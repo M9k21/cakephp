@@ -1,5 +1,5 @@
 <?php if (!empty($bidinfo)) : ?>
-    <h2>商品「<?= $bidinfo->biditem->name ?> 」</h2>
+    <h2>商品「<?= h($bidinfo->biditem->name) ?> 」</h2>
     <h3>※メッセージ情報</h3>
     <h6>※メッセージを送信する</h6>
     <?= $this->Form->create($bidmsg) ?>

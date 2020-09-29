@@ -5,7 +5,7 @@
     <?= $this->Html->charset() ?>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>
-        <?= $this->name . '/' . $this->request->action ?>
+        <?= $this->name . '/' . $this->request->getParam('action') ?>
     </title>
     <?= $this->Html->meta('icon') ?>
 
@@ -21,7 +21,7 @@
     <nav class="top-bar titlebar" data-topbar role="navigation">
         <ul class="title-area large-3 medium-4 columns name">
             <li>
-                <h1><?= $this->Html->link(__('Auction! [' . $authuser['username'] . ']'), ['action' => 'index']) ?></h1>
+                <h1><?= $this->Html->link(__('Auction! [' . h($authuser['username']) . ']'), ['action' => 'index']) ?></h1>
             </li>
         </ul>
         <div class="top-bar-section">
@@ -47,6 +47,7 @@
     </div>
     <footer>
     </footer>
+    <?= $this->fetch('script') ?>
 </body>
 
 </html>

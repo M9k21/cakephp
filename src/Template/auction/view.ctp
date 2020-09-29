@@ -13,8 +13,58 @@
         <td><?= $this->Number->format($biditem->id) ?></td>
     </tr>
     <tr>
+        <th scope="row">商品説明</th>
+        <td><?= h($biditem->description) ?></td>
+    </tr>
+    <tr>
+        <th scope="row">商品画像</th>
+        <td><?= $this->Html->image('uploaded/' . $biditem->image, ['width' => 300, 'height' => 200]) ?></td>
+    </tr>
+    <tr>
         <th scope="row">終了時間</th>
-        <td><?= h($biditem->endtime) ?></td>
+        <td>
+            <?= h($biditem->endtime) ?>
+            <div id="countdown" style="color:red">
+                <script>
+                    const json_data = JSON.parse('<?= $json ?>');
+
+                    function dateCounter() {
+                        //現在の日時取得
+                        const nowDate = new Date(json_data.nowtime * 1000);
+                        //終了の日時取得
+                        const anyDate = new Date(json_data.endtime);
+                        //日数を計算
+                        const daysBetween = Math.floor((anyDate - nowDate) / (1000 * 60 * 60 * 24));
+                        let ms = (anyDate - nowDate);
+
+                        const timer = setInterval(function() {
+                            if (ms >= 0) {
+                                //時間を取得
+                                const h = Math.floor(ms / 3600000);
+                                const _h = h % 24;
+                                //分を取得
+                                const m = Math.floor((ms - h * 3600000) / 60000);
+                                //秒を取得
+                                const s = Math.floor((ms - h * 3600000 - m * 60000) / 1000);
+
+                                //HTML上に出力
+                                document.getElementById("countdown").innerHTML = "終了まで " + daysBetween + "日" + _h + "時間" + m + "分" + s + "秒";
+
+                                ms = ms - 1000;
+
+                                if ((h == 0) && (m == 0) && (s == 0)) {
+                                    clearInterval(timer);
+                                    document.getElementById("countdown").innerHTML = "終了しました";
+                                }
+                            } else {
+                                document.getElementById("countdown").innerHTML = "終了しました";
+                            }
+                        }, 1000);
+                    }
+                    dateCounter();
+                </script>
+            </div>
+        </td>
     </tr>
     <tr>
         <th scope="row">投稿時間</th>
@@ -27,7 +77,7 @@
 </table>
 <div class="related">
     <h4><?= __('落札情報') ?></h4>
-    <?php if (!empty($biditem->bidinfo)) : ?>
+    <?php if ($biditem->finished && !empty($bidrequests)) : ?>
         <table cellpadding="0" cellspacing="0">
             <tr>
                 <th scope="col">落札者</th>
@@ -36,7 +86,7 @@
             </tr>
             <tr>
                 <td><?= h($biditem->bidinfo->user->username) ?></td>
-                <td><?= h($biditem->bidinfo->price) ?></td>
+                <td><?= h($biditem->bidinfo->price) ?>円</td>
                 <td><?= h($biditem->endtime) ?></td>
             </tr>
         </table>
@@ -61,8 +111,8 @@
                     <?php foreach ($bidrequests as $bidrequest) : ?>
                         <tr>
                             <td><?= h($bidrequest->user->username) ?></td>
-                            <td><?= h($bidrequest->price) ?></td>
-                            <td><?= $bidrequest->created ?></td>
+                            <td><?= h($bidrequest->price) ?>円</td>
+                            <td><?= h($bidrequest->created) ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

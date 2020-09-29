@@ -3,7 +3,8 @@
 namespace App\Controller;
 
 use App\Controller\AppController;
-
+use Cake\Datasource\ConnectionManager;
+use Cake\I18n\Time;
 use Cake\Event\Event;
 use Exception;
 
@@ -43,35 +44,44 @@ class AuctionController extends AuctionBaseController
     // 商品情報の表示
     public function view($id = null)
     {
+        $connection = ConnectionManager::get('default');
         // $idのBiditemを取得
         $biditem = $this->Biditems->get($id, [
             'contain' => ['Users', 'Bidinfo', 'Bidinfo.Users']
         ]);
         // オークション終了時の処理
         if ($biditem->endtime < new \DateTime('now') and $biditem->finished == 0) {
-            // finishedを1に変更して保存
-            $biditem->finished = 1;
-            $this->Biditems->save($biditem);
-            // Bidinfoを作成する
-            $bidinfo = $this->Bidinfo->newEntity();
-            // Bidinfoのbiditem_idに$idを設定
-            $bidinfo->biditem_id = $id;
-            // 最高金額のBidrequestを検索
-            $bidrequest = $this->Bidrequests->find('all', [
-                'conditions' => ['biditem_id' => $id],
-                'contain' => ['Users'],
-                'order' => ['price' => 'desc']
-            ])->first();
-            // Bidirequestが得られたときの処理
-            if (!empty($bidrequest)) {
-                //Bifinfoの各種プロパティをを設定して保存
-                $bidinfo->user_id = $bidrequest->user->id;
-                $bidinfo->user = $bidrequest->user;
-                $bidinfo->price = $bidrequest->price;
-                $this->Bidinfo->save($bidinfo);
+            $connection->begin();
+            try {
+                // finishedを1に変更して保存
+                $biditem->finished = 1;
+                $this->Biditems->save($biditem);
+                // Bidinfoを作成する
+                $bidinfo = $this->Bidinfo->newEntity();
+                // Bidinfoのbiditem_idに$idを設定
+                $bidinfo->biditem_id = $id;
+                // 最高金額のBidrequestを検索
+                $bidrequest = $this->Bidrequests->find('all', [
+                    'conditions' => ['biditem_id' => $id],
+                    'contain' => ['Users'],
+                    'order' => ['price' => 'desc']
+                ])->first();
+                // Bidrequestが得られた時の処理
+                if (!empty($bidrequest)) {
+                    // Bidinfoの各種プロパティを設定して保存する
+                    $bidinfo->user_id = $bidrequest->user->id;
+                    $bidinfo->user = $bidrequest->user;
+                    $bidinfo->price = $bidrequest->price;
+                    $this->Bidinfo->save($bidinfo);
+                }
+                // Biditemのbidinfoに$bidinfoを設定
+                $biditem->bidinfo = $bidinfo;
+                $connection->commit();
+            } catch (Exception $e) {
+                $this->Flash->error(__('エラーが発生しました。再度実行してください。'));
+                $connection->rollback();
+                return $this->redirect(['action' => 'index']);
             }
-            // Biditemのbidinfoに$bidinfoを設定
-            $biditem->bidinfo = $bidinfo;
         }
         // Bidrequestsからbiditem_idが$idのものを取得
         $bidrequests = $this->Bidrequests->find('all', [
@@ -79,28 +89,115 @@ class AuctionController extends AuctionBaseController
             'contain' => ['Users'],
             'order' => ['price' => 'desc']
         ])->toArray();
+        // JavaScriptに渡す値をjsonに変換
+        $json = json_encode(
+            [
+                'endtime' => $biditem->endtime,
+                'nowtime' => time()
+            ],
+            JSON_HEX_QUOT | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS
+        );
         // オブジェクト類をテンプレート用に設定
-        $this->set(compact('biditem', 'bidrequests'));
+        $this->set(compact('biditem', 'bidrequests', 'json'));
     }
 
     // 出品する処理
     public function add()
     {
+        $session = $this->getRequest()->getSession();
         // Biditemインスタンスを用意
         $biditem = $this->Biditems->newEntity();
+        // 修正の場合の処理
+        if (!empty($this->request->getQuery('additem'))) {
+            if ($session->check('add_biditem')) {
+                $biditem = $this->Biditems->newEntity($session->consume('add_biditem'));
+                $this->Flash->error(__('恐れ入りますが、画像を改めて指定してください。'));
+            } else {
+                return $this->redirect(['action' => 'add']);
+            }
+        }
         // POST送信時の処理
         if ($this->request->is('post')) {
-            // $biditemにフォームの送信内容を反映
-            $biditem =  $this->Biditems->patchEntity($biditem, $this->request->getData());
-            // $biditemを保存する
-            if ($this->Biditems->save($biditem)) {
-                // 成功時のメッセージ
-                $this->Flash->success(__('保存しました。'));
-                // トップページ(index)に移動
-                return $this->redirect(['action' => 'index']);
+            // フォームの送信内容を反映
+            $request_data = $this->request->getData();
+            // ファイル名を格納
+            $request_file = $this->request->getData('image');
+            $request_data['image'] = date('YmdHis') . $request_file['name'];
+            // $biditemに値を保管
+            $biditem->user_id = $request_data['user_id'];
+            $biditem->name =  $request_data['name'];
+            $biditem->description = $request_data['description'];
+            $biditem->finished = $request_data['finished'];
+            $biditem->endtime = $request_data['endtime'];
+            $biditem->image = $request_data['image'];
+            // セッションに値を保管
+            $session->write('add_biditem', $biditem->toArray());
+            // 画像のバリデーション処理
+            $this->fileValidation($request_data, $request_file);
+            return $this->redirect(['action' => 'confirm']);
+        }
+        // 値を保管
+        $this->set(compact('biditem'));
+    }
+
+    private function fileValidation($request_data, $request_file)
+    {
+        // ファイル形式のチェック
+        $allowFileType = array('image/jpeg', 'image/png', 'image/gif');
+        if (!in_array($request_file['type'], $allowFileType)) {
+            $this->Flash->error(__('PNG、JPGまたはGIFの画像ファイルのみアップロードできます。'));
+            return $this->redirect(['action' => 'add', '?' => ['additem' => 'rewrite']]);
+        }
+        // ファイル容量のチェック
+        if ($request_file['size'] > 5242880) {
+            $this->Flash->error(__('5MB以下の画像ファイルを指定してください。'));
+            return $this->redirect(['action' => 'add', '?' => ['additem' => 'rewrite']]);
+        }
+        // 画像ファイルの保存
+        $filePath = WWW_ROOT . DS . 'img' . DS . 'uploaded' . DS . $request_data['image'];
+        // 画像ファイルをディレクトリに保存
+        move_uploaded_file($request_file['tmp_name'], $filePath);
+    }
+
+    // 出品情報の確認
+    public function confirm()
+    {
+        $session = $this->getRequest()->getSession();
+        $connection = ConnectionManager::get('default');
+        if ($session->check('add_biditem')) {
+            // セッションに値が入っているか確認する
+            $biditem = $this->Biditems->newEntity($session->read('add_biditem'));
+            $biditem->endtime = new Time($biditem->endtime);
+            $biditem->finished = 0;
+        } else {
+            return $this->redirect(['action' => 'add']);
+        }
+        // POST送信時の処理
+        if ($this->request->is('post')) {
+            $connection->begin();
+            try {
+                // $biditemの値を保管
+                $biditem = $this->Biditems->patchEntity($biditem, $this->request->getData());
+                if ($biditem->getErrors()) {
+                    $this->Flash->error(__('入力内容を確認してください。'));
+                    return $this->redirect(['action' => 'add', '?' => ['additem' => 'rewrite']]);
+                }
+                // $biditemを保存する
+                if ($this->Biditems->save($biditem)) {
+                    // セッションの削除
+                    $session->delete('add_biditem');
+                    // 成功時のメッセージ
+                    $this->Flash->success(__('保存しました。'));
+                    $connection->commit();
+                    // トップページ(index)に移動
+                    return $this->redirect(['action' => 'index']);
+                }
+            } catch (Exception $e) {
+                // 失敗時のメッセージ
+                $this->Flash->error(__('保存に失敗しました。もう一度入力下さい。'));
+                $connection->rollback();
+                return $this->redirect(['action' => 'add', '?' => ['additem' => 'rewrite']]);
             }
-            // 失敗時のメッセージ
-            $this->Flash->error(__('保存に失敗しました。もう一度入力下さい。'));
         }
         // 値を保管
         $this->set(compact('biditem'));
@@ -109,6 +206,13 @@ class AuctionController extends AuctionBaseController
     // 入札の処理
     public function bid($biditem_id = null)
     {
+        $connection = ConnectionManager::get('default');
+        // $biditem_idの$biditemを取得する
+        $biditem = $this->Biditems->get($biditem_id);
+        if ($biditem->endtime < new \DateTime('now')) {
+            $this->Flash->error(__('入札は終了しました。'));
+            return $this->redirect(['action' => 'view', $biditem_id]);
+        }
         // 入札用のBidrequestインスタンスを用意
         $bidrequest =  $this->Bidrequests->newEntity();
         // $bidrequestにbiditem_idとuser_idを設定
@@ -116,37 +220,47 @@ class AuctionController extends AuctionBaseController
         $bidrequest->user_id =  $this->Auth->user('id');
         // POST送信時の処理
         if ($this->request->is('post')) {
-            // $bidrequestに送信フォームの内容を反映する
-            $bidrequest = $this->Bidrequests->patchEntity($bidrequest, $this->request->getData());
-            // Bidrequestを保存
-            if ($this->Bidrequests->save($bidrequest)) {
-                // 成功時のメッセージ
-                $this->Flash->success(__('入札を送信しました。'));
-                // トップページにリダイレクト
-                return $this->redirect(['action' => 'view', $biditem_id]);
+            $connection->begin();
+            try {
+                // $bidrequestに送信フォームの内容を反映する
+                $bidrequest = $this->Bidrequests->patchEntity($bidrequest, $this->request->getData());
+                // Bidrequestを保存
+                if ($this->Bidrequests->save($bidrequest)) {
+                    // 成功時のメッセージ
+                    $this->Flash->success(__('入札を送信しました。'));
+                    $connection->commit();
+                    // トップページにリダイレクト
+                    return $this->redirect(['action' => 'view', $biditem_id]);
+                }
+            } catch (Exception $e) {
+                // 失敗時のメッセージ
+                $this->Flash->error(__('入札に失敗しました。もう一度入力下さい。'));
+                $connection->rollback();
             }
-            // 失敗時のメッセージ
-            $this->Flash->error(__('入札に失敗しました。もう一度入力下さい。'));
         }
-        // $biditem_idの$biditemを取得する
-        $biditem = $this->Biditems->get($biditem_id);
         $this->set(compact('bidrequest', 'biditem'));
     }
 
     // 落札者とのメッセージ
     public function msg($bidinfo_id = null)
     {
+        $connection = ConnectionManager::get('default');
         // Bidmessageを新たに用意
         $bidmsg = $this->Bidmessages->newEntity();
         // POST送信時の処理
         if ($this->request->is('post')) {
-            // 送信されたフォームで$bidmsgを更新
-            $bidmsg = $this->Bidmessages->patchEntity($bidmsg, $this->request->getData());
-            // Bidmessageを保存
-            if ($this->Bidmessages->save($bidmsg)) {
-                $this->Flash->success(__('保存しました。'));
-            } else {
+            $connection->begin();
+            try {
+                // 送信されたフォームで$bidmsgを更新
+                $bidmsg = $this->Bidmessages->patchEntity($bidmsg, $this->request->getData());
+                // Bidmessageを保存
+                if ($this->Bidmessages->save($bidmsg)) {
+                    $this->Flash->success(__('保存しました。'));
+                    $connection->commit();
+                }
+            } catch (Exception $e) {
                 $this->Flash->error(__('保存に失敗しました。もう一度入力下さい。'));
+                $connection->rollback();
             }
         }
         try {
