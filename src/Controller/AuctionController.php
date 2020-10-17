@@ -38,7 +38,8 @@ class AuctionController extends AuctionBaseController
             'order' =>  ['endtime' => 'desc'],
             'limit' => 10
         ]);
-        $this->set(compact('auction'));
+        $nowtime = new Time();
+        $this->set(compact('auction', 'nowtime'));
     }
 
     // 商品情報の表示

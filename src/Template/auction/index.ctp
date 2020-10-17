@@ -13,7 +13,7 @@
         <?php foreach ($auction as $biditem) : ?>
             <tr>
                 <td><?= h($biditem->name) ?></td>
-                <td><?= h($biditem->finished ? 'Finished' : '') ?></td>
+                <td><?= h($biditem->endtime < $nowtime ? 'Finished' : '') ?></td>
                 <td><?= h($biditem->endtime) ?></td>
                 <td class="actions">
                     <?= $this->Html->link(__('View'), ['action' => 'view', $biditem->id]) ?>
