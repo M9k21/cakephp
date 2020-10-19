@@ -28,12 +28,12 @@ class AuctionBaseController extends AppController
                 ]
             ],
             'loginRedirect' => [
-                'controller' => 'Users',
-                'action' => 'login'
+                'controller' => 'Auction',
+                'action' => 'index'
             ],
             'logoutRedirect' => [
                 'controller' =>  'Users',
-                'action' => 'logout',
+                'action' => 'login',
             ],
             'authError' => 'ログインしてください。'
         ]);
@@ -57,8 +57,6 @@ class AuctionBaseController extends AppController
     // ログアウト処理
     public function logout()
     {
-        // セッションを破棄
-        $this->request->session()->destroy();
         return $this->redirect($this->Auth->logout());
     }
 
